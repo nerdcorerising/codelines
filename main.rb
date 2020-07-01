@@ -52,36 +52,42 @@ def pad_string(str, count)
 end
 
 def parse_file(file, code_type)
-    lines = File.open(file)
-    $code_lines[code_type][:files] += 1
-    in_comment = false
-    lines.each_line do |line|
-        if (in_comment)
-            $code_lines[code_type][:comment] += 1
-
-            if (code_type.ends_multiline_comment(line))
-                in_comment = false
-            end
-        else
-            case code_type.classify(line)
-            when :whitespace
-                $code_lines[code_type][:whitespace] += 1
-            when :comment
+    begin
+        lines = File.open(file)
+        $code_lines[code_type][:files] += 1
+        in_comment = false
+        lines.each_line do |line|
+            if (in_comment)
                 $code_lines[code_type][:comment] += 1
-            when :code
-                $code_lines[code_type][:code] += 1
-            end
 
-            # Can always start and end a /* style comment on the same line
-            if (code_type.starts_multiline_comment(line) && !code_type.ends_multiline_comment(line))
-                in_comment = true
+                if (code_type.ends_multiline_comment(line))
+                    in_comment = false
+                end
+            else
+                case code_type.classify(line)
+                when :whitespace
+                    $code_lines[code_type][:whitespace] += 1
+                when :comment
+                    $code_lines[code_type][:comment] += 1
+                when :code
+                    $code_lines[code_type][:code] += 1
+                end
+
+                # Can always start and end a /* style comment on the same line
+                if (code_type.starts_multiline_comment(line) && !code_type.ends_multiline_comment(line))
+                    in_comment = true
+                end
             end
         end
+    rescue Exception => e
+        puts "Exception \"#{e}\" opening file \"#{file}\""
     end
 end
 
 path = ARGV[0]
 puts "Searching #{path}"
+
+start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
 Dir.chdir(path)
 Dir.glob("**/*").each do |sub_entry|
@@ -89,6 +95,8 @@ Dir.glob("**/*").each do |sub_entry|
         $code_types.each do |code_type|
             if (code_type.is_this_code_type(File.basename(sub_entry)))
                 parse_file(sub_entry, code_type)
+
+                # The first one who claims it wins, probably better than double counting
                 next
             end
         end
@@ -109,3 +117,8 @@ $code_types.each do |code_type|
     puts "    Comments:   #{pad_string(comments_formatted, longest)}"
     puts "    Whitespace: #{pad_string(whitespace_formatted, longest)}"
 end
+
+end_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+elapsed = end_time - start_time
+
+puts "Took #{elapsed} seconds to process"
