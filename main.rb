@@ -1,3 +1,4 @@
+#!/usr/bin/ruby
 
 require './code_types'
 
@@ -13,7 +14,7 @@ $code_types = [ CppCode.new,
 $code_lines = { }
 
 $code_types.each do |code_type|
-    $code_lines[code_type] = { 
+    $code_lines[code_type] = {
         :whitespace => 0,
         :comment => 0,
         :code => 0,
@@ -22,6 +23,7 @@ end
 
 if ARGV.length < 1
     puts 'Please pass directory as argument'
+    return
 end
 
 def add_commas(num)
@@ -52,14 +54,28 @@ end
 def parse_file(file, code_type)
     lines = File.open(file)
     $code_lines[code_type][:files] += 1
+    in_comment = false
     lines.each_line do |line|
-        case code_type.classify(line)
-        when :whitespace
-            $code_lines[code_type][:whitespace] += 1
-        when :comment
+        if (in_comment)
             $code_lines[code_type][:comment] += 1
-        when :code
-            $code_lines[code_type][:code] += 1
+
+            if (code_type.ends_multiline_comment(line))
+                in_comment = false
+            end
+        else
+            case code_type.classify(line)
+            when :whitespace
+                $code_lines[code_type][:whitespace] += 1
+            when :comment
+                $code_lines[code_type][:comment] += 1
+            when :code
+                $code_lines[code_type][:code] += 1
+            end
+
+            # Can always start and end a /* style comment on the same line
+            if (code_type.starts_multiline_comment(line) && !code_type.ends_multiline_comment(line))
+                in_comment = true
+            end
         end
     end
 end

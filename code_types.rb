@@ -1,8 +1,4 @@
 
-# TODO: this doesn't handle multiline comments. If you have a multiline comment it will only
-# count the first line as a comment and the rest as code, I doubt that multiline comments
-# occur often enough to cause serious errors but it would be nice to handle them
-
 class CodeType
     def is_whitespace(line)
         return line.strip.empty?
@@ -23,6 +19,16 @@ class CStyleCommentCodeType < CodeType
     def is_comment(line)
         line.strip!
         return line.start_with?('//') || line.start_with?('/*')
+    end
+
+    # Techinically in C/C++ you can extend a single line '//' style comment with a '\'
+    # at the end of the line, but who does that?
+    def starts_multiline_comment(line)
+        return line.include?('/*')
+    end
+
+    def ends_multiline_comment(line)
+        return line.include?('*/')
     end
 end
 
@@ -63,6 +69,14 @@ class ShellScript < CodeType
     def is_comment(line)
         return line.strip.start_with?('#')
     end
+
+    def starts_multiline_comment(line)
+        return false
+    end
+
+    def ends_multiline_comment(line)
+        return false
+    end
 end
 
 class Python < CodeType
@@ -77,7 +91,15 @@ class Python < CodeType
 
     def is_comment(line)
         line.strip!
-        return line.start_with?('#') || line.start_with?('\"\"\"')
+        return line.start_with?('#') || line.start_with?('\"\"\"') || line.start_with?('\'\'\'')
+    end
+
+    def starts_multiline_comment(line)
+        return line.include?('\"\"\"') || line.include?('\'\'\'')
+    end
+
+    def ends_multiline_comment(line)
+        return line.include?('\"\"\"') || line.include?('\'\'\'')
     end
 end
 
@@ -95,6 +117,14 @@ class BatchFile < CodeType
         line.strip!
         return line.start_with?('rem') || line.start_with?('::')
     end
+
+    def starts_multiline_comment(line)
+        return false
+    end
+
+    def ends_multiline_comment(line)
+        return false
+    end
 end
 
 class Assembly < CodeType
@@ -111,6 +141,14 @@ class Assembly < CodeType
         line.strip!
         return line.start_with?('#') || line.start_with?(';')
     end
+
+    def starts_multiline_comment(line)
+        return false
+    end
+
+    def ends_multiline_comment(line)
+        return false
+    end
 end
 
 class Xml < CodeType
@@ -126,6 +164,16 @@ class Xml < CodeType
     def is_comment(line)
         line.strip!
         return line.start_with?('<!')
+    end
+
+    def starts_multiline_comment(line)
+        # Ugh, don't want to deal with xml style comments since I'd have to keep track of
+        # nesting to know
+        return false
+    end
+
+    def ends_multiline_comment(line)
+        return false
     end
 end
 
@@ -145,6 +193,16 @@ class MSBuild < CodeType
         line.strip!
         return line.start_with?('<!')
     end
+
+    def starts_multiline_comment(line)
+        # Ugh, don't want to deal with xml style comments since I'd have to keep track of
+        # nesting to know
+        return false
+    end
+
+    def ends_multiline_comment(line)
+        return false
+    end
 end
 
 class CMake < CodeType
@@ -161,5 +219,13 @@ class CMake < CodeType
     def is_comment(line)
         line.strip!
         return line.start_with?('#')
+    end
+
+    def starts_multiline_comment(line)
+        return false
+    end
+
+    def ends_multiline_comment(line)
+        return false
     end
 end
