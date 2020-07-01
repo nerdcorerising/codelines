@@ -32,6 +32,31 @@ class CStyleCommentCodeType < CodeType
     end
 end
 
+class NoMultilineComment < CodeType
+    def starts_multiline_comment(line)
+        return false
+    end
+
+    def ends_multiline_comment(line)
+        return false
+    end
+end
+
+class XmlCommentCodeType < CodeType
+    def is_comment(line)
+        line.strip!
+        return line.start_with?('<!--')
+    end
+
+    def starts_multiline_comment(line)
+        return line.include?('<!--')
+    end
+
+    def ends_multiline_comment(line)
+        return line.include?('-->')
+    end
+end
+
 class CppCode < CStyleCommentCodeType
     @@cpp_exts = [ '.h', '.hpp', '.hxx', '.cpp', '.cxx', '.cc', '.c' ]
 
@@ -56,7 +81,7 @@ class CSharpCode < CStyleCommentCodeType
     end
 end
 
-class ShellScript < CodeType
+class ShellScript < NoMultilineComment
     def name
         return 'Shell'
     end
@@ -68,14 +93,6 @@ class ShellScript < CodeType
 
     def is_comment(line)
         return line.strip.start_with?('#')
-    end
-
-    def starts_multiline_comment(line)
-        return false
-    end
-
-    def ends_multiline_comment(line)
-        return false
     end
 end
 
@@ -103,7 +120,7 @@ class Python < CodeType
     end
 end
 
-class BatchFile < CodeType
+class BatchFile < NoMultilineComment
     def name
         return 'Batch File'
     end
@@ -117,17 +134,9 @@ class BatchFile < CodeType
         line.strip!
         return line.start_with?('rem') || line.start_with?('::')
     end
-
-    def starts_multiline_comment(line)
-        return false
-    end
-
-    def ends_multiline_comment(line)
-        return false
-    end
 end
 
-class Assembly < CodeType
+class Assembly < NoMultilineComment
     def name
         return 'Assembly'
     end
@@ -141,17 +150,9 @@ class Assembly < CodeType
         line.strip!
         return line.start_with?('#') || line.start_with?(';')
     end
-
-    def starts_multiline_comment(line)
-        return false
-    end
-
-    def ends_multiline_comment(line)
-        return false
-    end
 end
 
-class Xml < CodeType
+class Xml < XmlCommentCodeType
     def name
         return 'XML'
     end
@@ -160,24 +161,9 @@ class Xml < CodeType
         extension = File.extname(file_name).downcase
         return extension.downcase == '.xml'
     end
-
-    def is_comment(line)
-        line.strip!
-        return line.start_with?('<!')
-    end
-
-    def starts_multiline_comment(line)
-        # Ugh, don't want to deal with xml style comments since I'd have to keep track of
-        # nesting to know
-        return false
-    end
-
-    def ends_multiline_comment(line)
-        return false
-    end
 end
 
-class MSBuild < CodeType
+class MSBuild < XmlCommentCodeType
     @@msbuild_exts = [ '.csproj', '.proj', '.ilproj', '.targets', '.props'  ]
 
     def name
@@ -188,24 +174,9 @@ class MSBuild < CodeType
         extension = File.extname(file_name).downcase
         return @@msbuild_exts.include?(extension.downcase)
     end
-
-    def is_comment(line)
-        line.strip!
-        return line.start_with?('<!')
-    end
-
-    def starts_multiline_comment(line)
-        # Ugh, don't want to deal with xml style comments since I'd have to keep track of
-        # nesting to know
-        return false
-    end
-
-    def ends_multiline_comment(line)
-        return false
-    end
 end
 
-class CMake < CodeType
+class CMake < NoMultilineComment
     @@msbuild_exts = [ '.csproj', '.proj', '.ilproj', '.targets', '.props'  ]
 
     def name
@@ -219,13 +190,5 @@ class CMake < CodeType
     def is_comment(line)
         line.strip!
         return line.start_with?('#')
-    end
-
-    def starts_multiline_comment(line)
-        return false
-    end
-
-    def ends_multiline_comment(line)
-        return false
     end
 end
